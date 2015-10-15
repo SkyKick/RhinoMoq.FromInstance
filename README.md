@@ -3,7 +3,7 @@ Extension for both [RhinoMocks](https://github.com/RhinoMocks/RhinoMocks) and [M
 
 ### What It Does: 
 
-This extension solves the problem of generating a mock from an **existing** instance.  This is handy when you have are testing a class `Foo` that has a dependency on a complex object `Bar` and you want some of `Bar`'s members to be mocked and the remaining to execute against the original member.
+This extension solves the problem of generating a mock from an **existing** instance.  This is handy when you are testing a class `Foo` that has a dependency on a complex object `Bar` and you want some of `Bar`'s members to be mocked and the remaining to execute against the original member.
 
 In other words, *this saves you from intializing every member*.
 
