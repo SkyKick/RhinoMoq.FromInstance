@@ -1,5 +1,6 @@
 ﻿using System;
 using Moq.Language;
+using RhinoMoq.FromInstance;
 
 namespace Moq.FromInstance
 {
@@ -24,7 +25,13 @@ namespace Moq.FromInstance
         public static Mock<T> SetupFromInstance<T>(this Mock<T> mock, T instance)
             where T : class
         {
-            throw new NotImplementedException();
+            new FromInstanceMockingEngine()
+                .MockFromInstance<T>(
+                    mock, 
+                    instance, 
+                    new MoqFromInstanceMockingEngineTemplate());
+
+            return mock;
         }
     }
 }
