@@ -17,7 +17,7 @@ namespace RhinoMoq.FromInstance.Tests.TemplateExtensionTests
             var actual = new Foo();
 
             // ACT
-            var mock = mockAbstraction.CreateMockAndSetupFromInstance(actual);
+            var mock = mockAbstraction.CreateMockAndSetupFromInstance<IFoo>(actual);
             
             // ASSERT
             mock.SumNumbers(3,6)

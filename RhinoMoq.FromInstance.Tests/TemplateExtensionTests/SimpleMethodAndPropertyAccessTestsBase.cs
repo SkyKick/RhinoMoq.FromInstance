@@ -21,7 +21,7 @@ namespace RhinoMoq.FromInstance.Tests.TemplateExtensionTests
             };
                
             // ACT
-            var mock = mockAbstraction.CreateMockAndSetupFromInstance(actual);
+            var mock = mockAbstraction.CreateMockAndSetupFromInstance<IFoo>(actual);
 
             actual.TestSetProperty = 8;
             mock.TestSetProperty = 8;

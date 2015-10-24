@@ -17,9 +17,9 @@ namespace RhinoMoq.FromInstance.Tests.TemplateExtensionTests
             var actual = new Foo();
 
             // ACT
-            var mock = mockAbstraction.CreateMockAndSetupFromInstance(
+            var mock = mockAbstraction.CreateMockAndSetupFromInstance<IFoo>(
                 actual,
-                new Tuple<Func<Foo, int>, int>(x => x.GetSimpleValue(), 100));
+                new Tuple<Func<IFoo, int>, int>(x => x.GetSimpleValue(), 100));
                 
             // ASSERT
             mock.GetSimpleValue()
@@ -35,7 +35,7 @@ namespace RhinoMoq.FromInstance.Tests.TemplateExtensionTests
             var actual = new Foo();
 
             // ACT
-            var mock = mockAbstraction.CreateMockAndSetupFromInstance(
+            var mock = mockAbstraction.CreateMockAndSetupFromInstance<IFoo>(
                 actual,
                 throwsFunction:
                     x => x.GetSimpleValue());
