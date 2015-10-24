@@ -116,8 +116,8 @@ namespace RhinoMoq.FromInstance
         {
             var returnsMethod = 
                 template.BuildReturnsMethod(
-                    member.ReturnType, 
                     typeof(T),
+                    member.ReturnType,
                     mock, 
                     instance);
 
