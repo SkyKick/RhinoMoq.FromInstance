@@ -29,14 +29,15 @@ public class Foo : IFoo
 ```C#
 var mock = 
     new Mock<IFoo>()
-    .SetupFromInstance(new Foo
-    {
-        StringProp = "Actual",
-        IntProp = 42
-    });
+        .SetupFromInstance(new Foo
+        {
+            StringProp = "Actual",
+            IntProp = 42
+        });
 
 //mock a method
-mock.Setup(x => x.IntProp).Returns(25);
+mock
+    .Setup(x => x.IntProp).Returns(25);
 
 //mock works
 Assert.Equal(
