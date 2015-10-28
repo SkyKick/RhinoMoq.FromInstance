@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using Moq.Language.Flow;
 using RhinoMoq.FromInstance;
+using RhinoMoq.FromInstance.Extensions;
 
 namespace Moq.FromInstance
 {
@@ -28,7 +30,7 @@ namespace Moq.FromInstance
 
         public object ExecuteSetupMethod(
             Type mockTargetType, Type mockedMethodReturnType,
-            object mock, object setupExpression)
+            object mock, LambdaExpression setupExpression)
         {
             var setupMethod =
 
@@ -54,27 +56,65 @@ namespace Moq.FromInstance
                     CultureInfo.CurrentCulture);
         }
 
-        public MethodInfo BuildReturnsMethod(Type mockTargetType, Type mockedMethodReturnType, object mock, object instance)
+        public MethodInfo BuildReturnsMethod(Type mockTargetType, MethodInfo mockedMethod, object mock, object instance)
         {
             var methodCallReturnType =
-                   typeof(ISetup<,>).Assembly
-                       .GetTypes()
-                       .First(t => t.Name == "MethodCallReturn`2");
+                typeof (ISetup<,>).Assembly
+                    .GetTypes()
+                    .First(t => t.Name == "MethodCallReturn`2")
+                    .MakeGenericType(mockTargetType, mockedMethod.ReturnType);
 
-            return
-                methodCallReturnType
-                    .MakeGenericType(mockTargetType, mockedMethodReturnType)
-                    .GetMethod(
-                        "Returns",
-                        new[]
-                        {
-                            typeof(Func<>).MakeGenericType(mockedMethodReturnType)
-                        });
+            if (mockedMethod.GetParameters().Length == 0)
+            {
+                return
+                    methodCallReturnType
+                        .GetMethod(
+                            "Returns",
+                            new[]
+                            {
+                                typeof (Func<>).MakeGenericType(mockedMethod.ReturnType)
+                            });
+
+            }
+            else
+            {
+                //Note: This version of Returns has a signature
+                //Returns<TParam1, TParam2, TReturn> but TReturn is already
+                //set in the MethodCallReturn (parent object).
+
+                return 
+                    methodCallReturnType
+                        .GetMethods()
+                        .First(x => 
+                            x.Name == "Returns" &&
+                            x.GetGenericArguments().Length == mockedMethod.GetParameters().Length)
+                        .MakeGenericMethod(
+                            mockedMethod.GetParameters()
+                                .Select(x => x.ParameterType)
+                                .ToArray());
+            }
         }
 
         public object BuildArgsTemplate(Type mockedMethodParameterType)
         {
-            throw new NotImplementedException();
+            var t = typeof (It);
+
+            var allM = t.GetMethods(BindingFlags.Public | BindingFlags.Static);
+
+            var m = t.GetMethod("IsAny", BindingFlags.Public | BindingFlags.Static);
+
+            var gm = m.MakeGenericMethod(mockedMethodParameterType);
+
+            return gm.Invoke(null, null);
+
+            /*
+
+            return
+                typeof (It)
+                    .GetMethod("IsAny`1", BindingFlags.Public | BindingFlags.Static)
+                    .MakeGenericMethod(mockedMethodParameterType)
+                    .Invoke(null, null);
+                */
         }
     }
 }

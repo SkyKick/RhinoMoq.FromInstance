@@ -35,7 +35,7 @@ namespace RhinoMocks.FromInstance
             Type mockTargetType, 
             Type mockedMethodReturnType, 
             object mock, 
-            object setupExpression)
+            LambdaExpression setupExpression)
         {
             var setupMethod =
                 typeof(RhinoMocksExtensions)
@@ -50,11 +50,11 @@ namespace RhinoMocks.FromInstance
                     null,
                     BindingFlags.NonPublic | BindingFlags.Static,
                     null,
-                    new object[] { mock, setupExpression },
+                    new object[] { mock, setupExpression.Compile() },
                     CultureInfo.CurrentCulture);
         }
 
-        public MethodInfo BuildReturnsMethod(Type mockTargetType, Type mockedMethodReturnType, object mock, object instance)
+        public MethodInfo BuildReturnsMethod(Type mockTargetType, MethodInfo mockedMethodReturnType, object mock, object instance)
         {
             return
                 typeof(MethodOptions<>)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -31,8 +32,17 @@ namespace RhinoMoq.FromInstance
         public static Delegate Create(Delegate originalDelegate)
         {
             Type returnType = originalDelegate.Method.ReturnType;
-            var wrapperType = typeof(DelegateWrapper<>).MakeGenericType(returnType);
-            var wrapper = Activator.CreateInstance(wrapperType, originalDelegate);
+            
+            var wrapperType = 
+                typeof(DelegateWrapper<>)
+                .MakeGenericType(returnType);
+
+            var wrapper = 
+                Activator.CreateInstance(
+                    wrapperType, 
+                    originalDelegate,
+                    originalDelegate.Method.GetParameters());
+            
             return ((DelegateWrapper)wrapper).InvokeDelegate;
         }
     }
@@ -40,13 +50,16 @@ namespace RhinoMoq.FromInstance
     internal sealed class DelegateWrapper<T> : DelegateWrapper
     {
         private readonly Delegate _originalDelegate;
+        //private readonly ParameterInfo[] _delegateParams;
+        private object[] _args = new object[0];
 
-        public DelegateWrapper(Delegate originalDelegate)
+        public DelegateWrapper(Delegate originalDelegate, params object[] delegateParams)
         {
             _originalDelegate = originalDelegate;
+            //_delegateParams = delegateParams ?? new object[0];
         }
 
-        private T Invoke()
+        public T Invoke()
         {
             return (T)_originalDelegate.DynamicInvoke();
         }
@@ -55,7 +68,33 @@ namespace RhinoMoq.FromInstance
         {
             get
             {
-                return new Func<T>(Invoke);
+                var funcType =
+                    typeof (Func<>)
+                        .Assembly
+                        .GetTypes()
+                        .First(x => x.Name == "Func`" + (_args.Length + 1));
+
+                var argCounter = 0;
+
+                var invokeExpression =
+                    Expression.Lambda(
+                        body:
+                            Expression.Call(
+                                Expression.Constant(this),
+                                this.GetType().GetMethod("Invoke")
+                                ),
+                        parameters:
+                            _args
+                                .Select(x => Expression.Parameter(x.GetType(), $"p{argCounter++}"))
+                                .ToArray());
+                return
+                    (Delegate)
+                        Activator
+                            .CreateInstance(
+                                funcType,
+                                BindingFlags.Default,
+                                null,
+                                invokeExpression);
             }
         }
     }

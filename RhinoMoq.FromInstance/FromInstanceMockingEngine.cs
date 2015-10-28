@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using JetBrains.Annotations;
+using RhinoMoq.FromInstance.Extensions;
 
 namespace RhinoMoq.FromInstance
 {
@@ -12,10 +13,10 @@ namespace RhinoMoq.FromInstance
         Type BuildSetupMethodFunctionType(Type mockTargetType, Type mockedMethodReturnType);
 
         object ExecuteSetupMethod(Type mockTargetType, Type mockedMethodReturnType,
-            object mock, object setupExpression);
+            object mock, LambdaExpression setupExpression);
 
         [NotNull]
-        MethodInfo BuildReturnsMethod(Type mockTargetType, Type mockedMethodReturnType, object mock, object instance);
+        MethodInfo BuildReturnsMethod(Type mockTargetType, MethodInfo mockedMethod, object mock, object instance);
 
         [NotNull]
         object BuildArgsTemplate(Type mockedMethodParameterType);
@@ -116,7 +117,7 @@ namespace RhinoMoq.FromInstance
                 typeof (T),
                 method.ReturnType,
                 mock,
-                setupExpression.Compile());
+                setupExpression);
         }
 
         private void CreateAndInvokeReturnsMethod<T>(
@@ -129,7 +130,7 @@ namespace RhinoMoq.FromInstance
             var returnsMethod = 
                 template.BuildReturnsMethod(
                     typeof(T),
-                    member.ReturnType,
+                    member,
                     mock, 
                     instance);
 
@@ -139,45 +140,57 @@ namespace RhinoMoq.FromInstance
                     .GetParameters()
                     .Select(x => Expression.Parameter(x.ParameterType, $"p{parameterCounter++}"))
                     .ToArray();
-
-            var funcType =
-                typeof (Func<>)
-                    .Assembly
-                    .GetTypes()
-                    .FirstOrDefault(x =>
-                        x.Name == "Func" &&
-                        x.GetGenericArguments().Count() == member.GetParameters().Count() + 1);
-
+            
+           
             var returnsFunction =
                 Expression.Lambda(
-                    funcType
-                        .MakeGenericType(
-                            new Type[] 
-                            {
-                                member.ReturnType
-                            }
-                            .Union(
-                                member
-                                    .GetParameters()
-                                    .Select(x => x.ParameterType))
-                            .ToArray()),
-                    Expression.Convert(
-                        Expression.Call(
-                            Expression.Constant(
-                                instance),
-                            member,
-                            methodArgs),
-                        member.ReturnType), 
-                    methodArgs)
+                    delegateType:
+                        member.GetFuncTypeForMethod(),
+                    body:
+                        Expression.Convert(
+                            Expression.Call(
+                                Expression.Constant(
+                                    instance),
+                                member,
+                                // ReSharper disable once CoVariantArrayConversion
+                                methodArgs),
+                            member.ReturnType), 
+                    parameters:
+                        methodArgs)
                     .Compile();
+
+            //CheckIfRhinoMocksWillComplainOnDoMethod(
+            //    member,
+            //    DelegateWrapper.Create(returnsFunction));
 
             returnsMethod
                 .Invoke(
                     setupResponse,
                     new object[]
                     {
-                        DelegateWrapper.Create(returnsFunction)
+              //          (methodArgs.Length == 0)
+                //        ? DelegateWrapper.Create(returnsFunction)
+                         returnsFunction
                     });
+        }
+
+        private void CheckIfRhinoMocksWillComplainOnDoMethod(MethodInfo method, Delegate callback)
+        {
+            ParameterInfo[] callbackParams = callback.Method.GetParameters(),
+                         methodParams = method.GetParameters();
+
+            string argsDontMatch = "Callback arguments didn't match the method arguments";
+
+            if (callbackParams.Length != methodParams.Length)
+                throw new InvalidOperationException(argsDontMatch);
+
+            for (int i = 0; i < methodParams.Length; i++)
+            {
+                Type methodParameter = methodParams[i].ParameterType;
+
+                if (methodParameter != callbackParams[i].ParameterType)
+                    throw new InvalidOperationException(argsDontMatch);
+            }
         }
     }
 }
