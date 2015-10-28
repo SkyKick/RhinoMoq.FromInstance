@@ -1,6 +1,7 @@
 ﻿using System;
 using Rhino.Mocks;
 using Rhino.Mocks.Interfaces;
+using RhinoMoq.FromInstance;
 
 namespace RhinoMocks.FromInstance
 {
@@ -31,7 +32,13 @@ namespace RhinoMocks.FromInstance
         public static T StubFromInstance<T>(this T mock, T instance)
             where T : class
         {
-            throw new NotImplementedException();
+            new FromInstanceMockingEngine()
+                .MockFromInstance<T>(
+                    mock,
+                    instance,
+                    new RhinoMocksFromInstanceMockingEngineTemplate());
+
+            return mock;
         }
     }
 }

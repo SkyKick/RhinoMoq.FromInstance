@@ -16,6 +16,9 @@ namespace RhinoMoq.FromInstance
 
         [NotNull]
         MethodInfo BuildReturnsMethod(Type mockTargetType, Type mockedMethodReturnType, object mock, object instance);
+
+        [NotNull]
+        object BuildArgsTemplate(Type mockedMethodParameterType);
     }
 
     public class FromInstanceMockingEngine
@@ -39,10 +42,9 @@ namespace RhinoMoq.FromInstance
 
             foreach (var member in mockedMembers)
             {
-                if (member.ReturnType == typeof (void))
-                    MockVoidMethod<T>(member, mock, template);
-
-                else
+                if (member.ReturnType == typeof (void)) {
+                    //MockVoidMethod<T>(member, mock, template);
+                } else
                     MockNonVoidMethod(member, mock, instance, template);
             }
         }
@@ -62,8 +64,8 @@ namespace RhinoMoq.FromInstance
                                 if (pi.CanRead)
                                     propertyMethods.Add(pi.GetGetMethod());
 
-                                if (pi.CanWrite)
-                                    propertyMethods.Add(pi.GetSetMethod());
+                                //if (pi.CanWrite)
+                                    //propertyMethods.Add(pi.GetSetMethod());
 
                                 return propertyMethods;
                             }));
@@ -89,14 +91,21 @@ namespace RhinoMoq.FromInstance
         {
             var setupExpressionLambdaParameter = Expression.Parameter(typeof (T), "x");
 
+            var methodArgs =
+                method
+                    .GetParameters()
+                    .Select(x => Expression.Constant(template.BuildArgsTemplate(x.ParameterType)))
+                    .ToArray();
+
             var setupExpression =
                     Expression.Lambda(
                         delegateType:
                             template.BuildSetupMethodFunctionType(typeof(T), method.ReturnType),
                         body:
-                            Expression.Property(
+                            Expression.Call(
                                 setupExpressionLambdaParameter,
-                                method),
+                                method,
+                                methodArgs),
                         parameters:
                             new List<ParameterExpression>
                             {
@@ -107,11 +116,14 @@ namespace RhinoMoq.FromInstance
                 typeof (T),
                 method.ReturnType,
                 mock,
-                setupExpression);
+                setupExpression.Compile());
         }
 
         private void CreateAndInvokeReturnsMethod<T>(
-            object setupResponse, MethodInfo member, object mock, T instance,
+            object setupResponse, 
+            MethodInfo member, 
+            object mock, 
+            T instance,
             IFromInstanceMockingEngineTemplate template)
         {
             var returnsMethod = 
@@ -121,16 +133,42 @@ namespace RhinoMoq.FromInstance
                     mock, 
                     instance);
 
+            var parameterCounter = 0;
+            var methodArgs =
+                member
+                    .GetParameters()
+                    .Select(x => Expression.Parameter(x.ParameterType, $"p{parameterCounter++}"))
+                    .ToArray();
+
+            var funcType =
+                typeof (Func<>)
+                    .Assembly
+                    .GetTypes()
+                    .FirstOrDefault(x =>
+                        x.Name == "Func" &&
+                        x.GetGenericArguments().Count() == member.GetParameters().Count() + 1);
+
             var returnsFunction =
                 Expression.Lambda(
-                    typeof(Func<>)
-                        .MakeGenericType(member.ReturnType),
+                    funcType
+                        .MakeGenericType(
+                            new Type[] 
+                            {
+                                member.ReturnType
+                            }
+                            .Union(
+                                member
+                                    .GetParameters()
+                                    .Select(x => x.ParameterType))
+                            .ToArray()),
                     Expression.Convert(
                         Expression.Call(
                             Expression.Constant(
                                 instance),
-                            member),
-                        member.ReturnType))
+                            member,
+                            methodArgs),
+                        member.ReturnType), 
+                    methodArgs)
                     .Compile();
 
             returnsMethod
@@ -138,8 +176,7 @@ namespace RhinoMoq.FromInstance
                     setupResponse,
                     new object[]
                     {
-                        //DelegateWrapper.Create(returnsFunction)
-                        returnsFunction
+                        DelegateWrapper.Create(returnsFunction)
                     });
         }
     }
