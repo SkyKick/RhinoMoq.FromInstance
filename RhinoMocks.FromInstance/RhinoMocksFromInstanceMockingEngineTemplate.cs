@@ -54,11 +54,11 @@ namespace RhinoMocks.FromInstance
                     CultureInfo.CurrentCulture);
         }
 
-        public MethodInfo BuildReturnsMethod(Type mockTargetType, MethodInfo mockedMethodReturnType, object mock, object instance)
+        public MethodInfo BuildReturnsMethod(Type mockTargetType, MethodInfo mockedMethod, object mock, object instance)
         {
             return
                 typeof(MethodOptions<>)
-                    .MakeGenericType(mockedMethodReturnType)
+                    .MakeGenericType(mockedMethod.ReturnType)
                     //backing store for Do method
                     .GetMethod("Do");
         }
