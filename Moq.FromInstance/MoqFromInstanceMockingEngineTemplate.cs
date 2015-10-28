@@ -97,24 +97,11 @@ namespace Moq.FromInstance
 
         public object BuildArgsTemplate(Type mockedMethodParameterType)
         {
-            var t = typeof (It);
-
-            var allM = t.GetMethods(BindingFlags.Public | BindingFlags.Static);
-
-            var m = t.GetMethod("IsAny", BindingFlags.Public | BindingFlags.Static);
-
-            var gm = m.MakeGenericMethod(mockedMethodParameterType);
-
-            return gm.Invoke(null, null);
-
-            /*
-
-            return
+           return
                 typeof (It)
-                    .GetMethod("IsAny`1", BindingFlags.Public | BindingFlags.Static)
+                    .GetMethod("IsAny", BindingFlags.Public | BindingFlags.Static)
                     .MakeGenericMethod(mockedMethodParameterType)
                     .Invoke(null, null);
-                */
         }
     }
 }
