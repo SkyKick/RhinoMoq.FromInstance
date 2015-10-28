@@ -71,5 +71,10 @@ namespace Moq.FromInstance
                             typeof(Func<>).MakeGenericType(mockedMethodReturnType)
                         });
         }
+
+        public object BuildArgsTemplate(Type mockedMethodParameterType)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
