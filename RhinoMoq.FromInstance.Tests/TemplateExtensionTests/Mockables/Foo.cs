@@ -16,9 +16,10 @@ namespace RhinoMoq.FromInstance.Tests.TemplateExtensionTests.Mockables
         int TestSetProperty { get; set; }
 
         int SumNumbers(int a, int b);
-       // int SumNumbers(params int[] args);
 
-       // int SumNumbers(IEnumerable<ComplexObject> complexObjects);
+        int SumNumbers(params int[] args);
+
+        int SumNumbers(IEnumerable<ComplexObject> complexObjects);
     }
 
     public class Foo : IFoo
