@@ -23,10 +23,10 @@ namespace RhinoMoq.FromInstance.Extensions
                         x.Name == "Func`" + (method.GetParameters().Length + 1))
                     //add correct generic type params
                     .MakeGenericType(
-                        method.ReturnType
-                            .Concat(method
-                                .GetParameters()
-                                .Select(x => x.ParameterType))
+                        method
+                            .GetParameters()
+                            .Select(x => x.ParameterType)
+                            .Concat(new [] {method.ReturnType})
                             .ToArray());
         }
     }
