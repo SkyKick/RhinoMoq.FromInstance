@@ -95,7 +95,11 @@ namespace RhinoMoq.FromInstance
             var methodArgs =
                 method
                     .GetParameters()
-                    .Select(x => Expression.Constant(template.BuildArgsTemplate(x.ParameterType)))
+                    .Select(x => 
+                        Expression.Convert(
+                            Expression.Constant(
+                                template.BuildArgsTemplate(x.ParameterType)),
+                            x.ParameterType))
                     .ToArray();
 
             var setupExpression =
